@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Apartment Hunter — Estimation immobilière</title>
+<style>
+  :root {
+    --bg: #f4f7fb; --card: #ffffff; --text: #1b2430; --muted: #5d6b7d;
+    --brand: #0a5cff; --brand-dark: #0847c4; --line: #dfe5ee; --ok: #12805c; --warn: #9a6700; --err: #b42318;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0e141b; --card: #18212b; --text: #e8edf3; --muted: #9aa8b8; --brand: #4d8dff;
+            --brand-dark: #79a9ff; --line: #2b3745; --ok: #3ccf9c; --warn: #e3b341; --err: #ff7b72; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; }
+  header { background: linear-gradient(135deg, #0a5cff, #0838a0); color: #fff; padding: 2.2rem 1rem 3.2rem; text-align: center; }
+  header h1 { margin: 0 0 .3rem; font-size: 1.9rem; }
+  header p { margin: 0; opacity: .9; }
+  main { max-width: 980px; margin: -2rem auto 3rem; padding: 0 1rem; display: grid; gap: 1.2rem; grid-template-columns: 1fr; }
+  @media (min-width: 860px) { main { grid-template-columns: 1.5fr 1fr; align-items: start; } }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 1.4rem; box-shadow: 0 6px 20px rgba(10, 30, 70, .07); }
+  h2 { margin: 0 0 1rem; font-size: 1.1rem; }
+  fieldset { border: 0; padding: 0; margin: 0 0 1.1rem; }
+  legend { font-weight: 600; font-size: .85rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-bottom: .6rem; padding: 0; }
+  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: .8rem; }
+  .full { grid-column: 1 / -1; }
+  label { display: block; font-size: .88rem; font-weight: 500; margin-bottom: .2rem; }
+  label small { color: var(--muted); font-weight: 400; }
+  input, select { width: 100%; padding: .55rem .65rem; font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; }
+  input:focus, select:focus { outline: 2px solid var(--brand); outline-offset: 1px; }
+  .check { display: flex; align-items: center; gap: .5rem; padding: .55rem 0; }
+  .check input { width: auto; } .check label { margin: 0; }
+  details { margin-top: .4rem; } summary { cursor: pointer; color: var(--brand-dark); font-size: .9rem; }
+  button { width: 100%; margin-top: .6rem; padding: .85rem; font: inherit; font-weight: 600; color: #fff; background: var(--brand); border: 0; border-radius: 10px; cursor: pointer; }
+  button:hover { background: var(--brand-dark); }
+  .result { text-align: center; }
+  .price { font-size: 2.5rem; font-weight: 700; color: var(--brand-dark); margin: .2rem 0; }
+  .range { color: var(--muted); }
+  .msg { border-radius: 8px; padding: .6rem .8rem; margin: .6rem 0; font-size: .9rem; border: 1px solid; }
+  .msg.err { color: var(--err); border-color: var(--err); } .msg.warn { color: var(--warn); border-color: var(--warn); }
+  .info { font-size: .88rem; color: var(--muted); } .info li { margin-bottom: .4rem; }
+  .stat { display: flex; justify-content: space-between; border-bottom: 1px solid var(--line); padding: .35rem 0; font-size: .92rem; }
+  .stat:last-child { border: 0; } .stat b { color: var(--text); }
+</style>
+</head>
+<body>
+<header>
+  <h1>🏠 Apartment Hunter</h1>
+  <p>Estimez le prix d'un bien du comté de King (Seattle, WA) à partir de ses caractéristiques</p>
+</header>
+
+<main>
+  <section class="card">
+    <h2>Caractéristiques du bien</h2>
+    {% for e in errors %}<div class="msg err">{{ e }}</div>{% endfor %}
+    <form method="post" id="f">
+      <fieldset>
+        <legend>Localisation</legend>
+        <div class="grid">
+          <div class="full">
+            <label for="zipcode">Code postal</label>
+            <select id="zipcode" name="zipcode" required>
+              <option value="">— Choisir —</option>
+              {% for z in zipcodes | sort %}<option value="{{ z }}" {{ 'selected' if form.get('zipcode') == z }}>{{ z }}</option>{% endfor %}
+            </select>
+          </div>
+        </div>
+        <details>
+          <summary>Options avancées (remplies automatiquement à partir du code postal)</summary>
+          <div class="grid" style="margin-top:.7rem">
+            <div><label for="lat">Latitude</label><input id="lat" name="lat" type="number" step="any" value="{{ form.get('lat', '') }}"></div>
+            <div><label for="long">Longitude</label><input id="long" name="long" type="number" step="any" value="{{ form.get('long', '') }}"></div>
+            <div><label for="sqft_living15">Surface moy. voisins <small>(sqft)</small></label><input id="sqft_living15" name="sqft_living15" type="number" value="{{ form.get('sqft_living15', '') }}"></div>
+            <div><label for="sqft_lot15">Terrain moy. voisins <small>(sqft)</small></label><input id="sqft_lot15" name="sqft_lot15" type="number" value="{{ form.get('sqft_lot15', '') }}"></div>
+          </div>
+        </details>
+      </fieldset>
+
+      <fieldset>
+        <legend>Surfaces et pièces</legend>
+        <div class="grid">
+          <div><label for="sqft_living">Surface habitable <small>(sqft)</small></label><input id="sqft_living" name="sqft_living" type="number" required value="{{ form.get('sqft_living', 1800) }}"></div>
+          <div><label for="sqft_lot">Terrain <small>(sqft)</small></label><input id="sqft_lot" name="sqft_lot" type="number" required value="{{ form.get('sqft_lot', 6000) }}"></div>
+          <div><label for="bedrooms">Chambres</label><input id="bedrooms" name="bedrooms" type="number" min="0" max="12" required value="{{ form.get('bedrooms', 3) }}"></div>
+          <div><label for="bathrooms">Salles de bain <small>(0,25 = lavabo seul)</small></label><input id="bathrooms" name="bathrooms" type="number" step="0.25" min="0.5" max="8" required value="{{ form.get('bathrooms', 2) }}"></div>
+          <div><label for="floors">Étages</label><input id="floors" name="floors" type="number" step="0.5" min="1" max="3.5" required value="{{ form.get('floors', 1) }}"></div>
+          <div class="check"><input type="checkbox" id="has_basement" name="has_basement" {{ 'checked' if form.get('has_basement') }}><label for="has_basement">Sous-sol</label></div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Qualité et état</legend>
+        <div class="grid">
+          <div>
+            <label for="grade">Qualité de construction</label>
+            <select id="grade" name="grade">
+              {% for g, t in [(3,'3 — Très basique'),(4,'4 — Basse'),(5,'5 — Moyenne basse'),(6,'6 — Correcte'),(7,'7 — Standard'),(8,'8 — Bonne'),(9,'9 — Très bonne'),(10,'10 — Haut de gamme'),(11,'11 — Luxe'),(12,'12 — Luxe supérieur'),(13,'13 — Exceptionnel')] %}
+              <option value="{{ g }}" {{ 'selected' if (form.get('grade', '7') | string) == (g | string) }}>{{ t }}</option>{% endfor %}
+            </select>
+          </div>
+          <div>
+            <label for="condition">État général</label>
+            <select id="condition" name="condition">
+              {% for g, t in [(1,'1 — Mauvais'),(2,'2 — Passable'),(3,'3 — Moyen'),(4,'4 — Bon'),(5,'5 — Excellent')] %}
+              <option value="{{ g }}" {{ 'selected' if (form.get('condition', '3') | string) == (g | string) }}>{{ t }}</option>{% endfor %}
+            </select>
+          </div>
+          <div>
+            <label for="view">Vue</label>
+            <select id="view" name="view">
+              {% for g, t in [(0,'0 — Aucune'),(1,'1 — Correcte'),(2,'2 — Bonne'),(3,'3 — Très bonne'),(4,'4 — Exceptionnelle')] %}
+              <option value="{{ g }}" {{ 'selected' if (form.get('view', '0') | string) == (g | string) }}>{{ t }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="check"><input type="checkbox" id="waterfront" name="waterfront" {{ 'checked' if form.get('waterfront') }}><label for="waterfront">Front de mer / lac</label></div>
+          <div><label for="yr_built">Année de construction</label><input id="yr_built" name="yr_built" type="number" required value="{{ form.get('yr_built', 1990) }}"></div>
+          <div><label for="yr_renovated">Année de rénovation <small>(vide si jamais)</small></label><input id="yr_renovated" name="yr_renovated" type="number" value="{{ form.get('yr_renovated', '') }}"></div>
+        </div>
+      </fieldset>
+      <button type="submit">Estimer le prix</button>
+    </form>
+  </section>
+
+  <aside style="display:grid; gap:1.2rem;">
+    <section class="card result">
+      <h2>Estimation</h2>
+      {% if result %}
+        <div class="price">{{ '{:,}'.format(result.estimate).replace(',', ' ') }} $</div>
+        <div class="range">Fourchette probable (80 %)<br><b>{{ '{:,}'.format(result.low).replace(',', ' ') }} $ — {{ '{:,}'.format(result.high).replace(',', ' ') }} $</b></div>
+        {% for w in warnings %}<div class="msg warn">{{ w }}</div>{% endfor %}
+      {% else %}
+        <p class="info">Renseignez le formulaire puis cliquez sur « Estimer le prix ».</p>
+      {% endif %}
+    </section>
+
+    <section class="card">
+      <h2>À propos du modèle</h2>
+      <div class="stat"><span>Algorithme</span><b>{{ meta.model_name }}</b></div>
+      <div class="stat"><span>R² (test)</span><b>{{ '%.2f' | format(meta.test_metrics['R² (log)']) }}</b></div>
+      <div class="stat"><span>Erreur médiane (test)</span><b>{{ '%.1f' | format(meta.test_metrics['Erreur médiane (%)']) }} %</b></div>
+      <div class="stat"><span>Variables utilisées</span><b>{{ meta.features | length }}</b></div>
+      <ul class="info" style="margin-top:1rem; padding-left:1.1rem;">
+        <li>Prix en <b>dollars de 2014-2015</b> (période des données d'entraînement).</li>
+        <li>Les biens très chers ou atypiques sont moins bien estimés : l'outil donne un ordre de grandeur, pas une expertise.</li>
+      </ul>
+    </section>
+  </aside>
+</main>
+
+<script>
+  // Remplit latitude, longitude et voisinage à partir du code postal choisi
+  const ZIP = {{ zipcodes | tojson }};
+  const zsel = document.getElementById('zipcode');
+  function fillFromZip() {
+    const z = ZIP[zsel.value]; if (!z) return;
+    for (const k of ['lat', 'long', 'sqft_living15', 'sqft_lot15']) document.getElementById(k).value = z[k];
+  }
+  zsel.addEventListener('change', fillFromZip);
+  if (zsel.value && !document.getElementById('lat').value) fillFromZip();
+</script>
+</body>
+</html>

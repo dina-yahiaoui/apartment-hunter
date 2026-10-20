@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{# Message d'erreur sous un champ #}
+{% macro erreur(champ) -%}
+  {% if erreurs.get(champ) %}<p class="champ__erreur" id="erreur-{{ champ }}">{{ erreurs[champ] }}</p>{% endif %}
+{%- endmacro %}
+
+{# Attributs d'accessibilité d'un champ en erreur #}
+{% macro attributs_erreur(champ) -%}
+  {% if erreurs.get(champ) %}aria-invalid="true" aria-describedby="erreur-{{ champ }}"{% endif %}
+{%- endmacro %}
+
+{% block contenu %}
+
+{% if resultat %}
+<section class="resultat" id="resultat" aria-live="polite">
+  <p class="resultat__etiquette">Prix estimé</p>
+  <p class="resultat__prix">{{ resultat.prix }}</p>
+  <p class="resultat__fourchette">
+    Fourchette indicative : <strong>{{ resultat.bas }}</strong> – <strong>{{ resultat.haut }}</strong>
+    <span class="resultat__marge">(± {{ resultat.marge }}, erreur médiane du modèle)</span>
+  </p>
+  <ul class="resultat__details">
+    <li>Âge de la maison en {{ annee_reference }} : <strong>{{ resultat.house_age }} an{{ "s" if resultat.house_age > 1 }}</strong></li>
+    <li>Emplacement : <strong>{{ "point choisi sur la carte" if resultat.position_carte else "centre du code postal (par défaut)" }}</strong></li>
+  </ul>
+  <p class="resultat__rappel">Estimation basée sur les ventes 2014-2015 du comté de King (Seattle).</p>
+</section>
+{% endif %}
+
+{% if erreurs %}
+<div class="alerte" role="alert">
+  <p class="alerte__titre">Certaines informations sont à corriger :</p>
+  <ul>
+    {% for message in erreurs.values() %}<li>{{ message }}</li>{% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+<form class="formulaire" method="post" action="{{ url_for('predire') }}#resultat">
+  <div class="grille">
+
+    <div class="colonne">
+      <section class="bloc">
+        <h2 class="bloc__titre">Surfaces</h2>
+
+        <div class="champ">
+          <label for="sqft_living">Surface habitable totale <span class="unite">(sqft)</span></label>
+          <input type="number" id="sqft_living" name="sqft_living" inputmode="numeric" required
+                 min="{{ bornes.sqft_living[0] }}" max="{{ bornes.sqft_living[1] }}" step="1"
+                 value="{{ valeurs.get('sqft_living', '') }}" data-m2 {{ attributs_erreur('sqft_living') }}>
+          <p class="champ__aide"><span data-m2-pour="sqft_living"></span> · sous-sol compris</p>
+          {{ erreur('sqft_living') }}
+        </div>
+
+        <div class="champ">
+          <label for="sqft_lot">Surface du terrain <span class="unite">(sqft)</span></label>
+          <input type="number" id="sqft_lot" name="sqft_lot" inputmode="numeric" required
+                 min="{{ bornes.sqft_lot[0] }}" max="{{ bornes.sqft_lot[1] }}" step="1"
+                 value="{{ valeurs.get('sqft_lot', '') }}" data-m2 {{ attributs_erreur('sqft_lot') }}>
+          <p class="champ__aide"><span data-m2-pour="sqft_lot"></span> · parcelle entière, maison comprise</p>
+          {{ erreur('sqft_lot') }}
+        </div>
+
+        <div class="champ">
+          <label for="sqft_basement">Surface du sous-sol <span class="unite">(sqft)</span></label>
+          <input type="number" id="sqft_basement" name="sqft_basement" inputmode="numeric" required
+                 min="{{ bornes.sqft_basement[0] }}" max="{{ bornes.sqft_basement[1] }}" step="1"
+                 value="{{ valeurs.get('sqft_basement', '') }}" data-m2 {{ attributs_erreur('sqft_basement') }}>
+          <p class="champ__aide"><span data-m2-pour="sqft_basement"></span> · indiquez 0 s'il n'y a pas de sous-sol</p>
+          {{ erreur('sqft_basement') }}
+        </div>
+      </section>
+
+      <section class="bloc">
+        <h2 class="bloc__titre">Qualité et état</h2>
+
+        <div class="champ">
+          <label for="grade">Qualité de construction</label>
+          <select id="grade" name="grade" required {{ attributs_erreur('grade') }}>
+            {% for note, libelle in libelles_grade.items() %}
+            <option value="{{ note }}" {{ "selected" if valeurs.get('grade') == note|string }}>{{ libelle }}</option>
+            {% endfor %}
+          </select>
+          <p class="champ__aide">Échelle officielle du comté : 7 correspond à une construction standard, 11 et plus au haut de gamme.</p>
+          {{ erreur('grade') }}
+        </div>
+
+        <div class="champ">
+          <label for="condition">État général</label>
+          <select id="condition" name="condition" required {{ attributs_erreur('condition') }}>
+            {% for note, libelle in libelles_etat.items() %}
+            <option value="{{ note }}" {{ "selected" if valeurs.get('condition') == note|string }}>{{ libelle }}</option>
+            {% endfor %}
+          </select>
+          {{ erreur('condition') }}
+        </div>
+
+        <div class="champ">
+          <label for="view">Qualité de la vue</label>
+          <select id="view" name="view" required {{ attributs_erreur('view') }}>
+            {% for note, libelle in libelles_vue.items() %}
+            <option value="{{ note }}" {{ "selected" if valeurs.get('view') == note|string }}>{{ libelle }}</option>
+            {% endfor %}
+          </select>
+          <p class="champ__aide">Vue sur les montagnes, le lac, la baie ou la ville.</p>
+          {{ erreur('view') }}
+        </div>
+      </section>
+
+      <section class="bloc">
+        <h2 class="bloc__titre">Âge et atouts</h2>
+
+        <div class="champ">
+          <label for="annee_construction">Année de construction</label>
+          <input type="number" id="annee_construction" name="annee_construction" inputmode="numeric" required
+                 min="{{ bornes.annee_construction[0] }}" max="{{ bornes.annee_construction[1] }}" step="1"
+                 value="{{ valeurs.get('annee_construction', '') }}" {{ attributs_erreur('annee_construction') }}>
+          <p class="champ__aide">Entre {{ bornes.annee_construction[0] }} et {{ bornes.annee_construction[1] }}. L'âge est calculé par rapport à {{ annee_reference }}.</p>
+          {{ erreur('annee_construction') }}
+        </div>
+
+        <div class="cases">
+          <label class="case">
+            <input type="checkbox" name="waterfront" value="1" {{ "checked" if valeurs.get('waterfront') }}>
+            <span>
+              <strong>En bord de l'eau</strong>
+              <small>Accès direct à un lac ou à la baie</small>
+            </span>
+          </label>
+          <label class="case">
+            <input type="checkbox" name="renovated" value="1" {{ "checked" if valeurs.get('renovated') }}>
+            <span>
+              <strong>Déjà rénovée</strong>
+              <small>Rénovation importante depuis la construction</small>
+            </span>
+          </label>
+        </div>
+      </section>
+    </div>
+
+    <div class="colonne">
+      <section class="bloc bloc--carte">
+        <h2 class="bloc__titre">Emplacement</h2>
+
+        <div class="champ">
+          <label for="zipcode">Code postal</label>
+          <select id="zipcode" name="zipcode" required {{ attributs_erreur('zipcode') }}>
+            {% for code in zipcodes %}
+            <option value="{{ code }}" {{ "selected" if valeurs.get('zipcode') == code|string }}>{{ code }}</option>
+            {% endfor %}
+          </select>
+          {{ erreur('zipcode') }}
+        </div>
+
+        <div id="carte" class="carte" data-lat="{{ lat }}" data-long="{{ long }}"
+             role="application" aria-label="Carte : cliquez pour placer la maison"></div>
+        <p class="champ__aide" id="statut-carte">
+          {% if position_choisie %}Point choisi sur la carte.{% else %}Position par défaut : centre du code postal. Cliquez sur la carte pour placer la maison précisément.{% endif %}
+        </p>
+        {{ erreur('carte') }}
+
+        <input type="hidden" id="lat" name="lat" value="{{ lat }}">
+        <input type="hidden" id="long" name="long" value="{{ long }}">
+        <input type="hidden" id="position_choisie" name="position_choisie" value="{{ '1' if position_choisie else '0' }}">
+      </section>
+
+      <button type="submit" class="bouton">Estimer le prix</button>
+      <p class="note">Les prix estimés correspondent au marché de 2014-2015.</p>
+    </div>
+
+  </div>
+</form>
+
+<script id="donnees-zip" type="application/json">{{ zip_latlong|tojson }}</script>
+{% endblock %}

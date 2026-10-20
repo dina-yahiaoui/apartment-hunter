@@ -1,0 +1,31 @@
+# Fichiers exclus du contexte de build Docker (non envoyés au moteur Docker)
+
+# Environnements et outils locaux
+.venv/
+venv/
+.env
+.git/
+.gitignore
+.vscode/
+.idea/
+
+# Données, notebooks et livrables hors application
+data/
+notebooks/
+powerbi/
+docs/
+**/*.ipynb
+**/.ipynb_checkpoints/
+
+# Fichiers Python générés
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+
+# Fichiers du projet inutiles dans l'image (requirements.txt de la racine seulement : app/requirements.txt est conservé)
+requirements.txt
+README.md
+Dockerfile
+.dockerignore
+**/*.log
+**/.DS_Store

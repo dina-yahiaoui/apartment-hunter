@@ -1,0 +1,9 @@
+# Dépendances de l'application Flask uniquement (image Docker).
+# Versions identiques au .venv d'entraînement : un modèle joblib ne se recharge
+# de façon fiable qu'avec la même version de scikit-learn (voir models/metadata.json).
+flask==3.1.3
+gunicorn==23.0.0
+pandas==3.0.6
+numpy==2.5.4
+scikit-learn==1.9.1
+joblib==1.6.0

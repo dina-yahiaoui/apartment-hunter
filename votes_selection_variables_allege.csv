@@ -1,0 +1,24 @@
+             , Info mutuelle, Lasso (1-SE), Forward SFS, Boruta, VIF≤10, Nb votes
+sqft_living  , True         , True        , True       , True  , False ,        4
+view         , True         , True        , True       , True  , True  ,        4
+sqft_lot     , True         , True        , True       , True  , True  ,        4
+sqft_living15, True         , True        , True       , True  , True  ,        4
+lat          , True         , True        , True       , True  , True  ,        4
+sqft_above   , True         , True        , True       , True  , True  ,        4
+grade        , True         , True        , True       , True  , True  ,        4
+house_age    , True         , True        , True       , True  , False ,        4
+waterfront   , True         , True        , True       , False , True  ,        3
+bathrooms    , True         , True        , True       , False , True  ,        3
+floors       , True         , True        , True       , False , True  ,        3
+has_basement , True         , True        , True       , False , True  ,        3
+yr_built     , True         , False       , True       , True  , True  ,        3
+yr_renovated , True         , True        , True       , False , False ,        3
+condition    , True         , True        , True       , False , True  ,        3
+long         , True         , False       , True       , True  , True  ,        3
+bedrooms     , True         , False       , True       , False , True  ,        2
+sqft_lot15   , True         , False       , False      , True  , True  ,        2
+sqft_basement, True         , False       , False      , False , True  ,        1
+is_renovated , False        , False       , True       , False , True  ,        1
+sale_year    , False        , True        , False      , False , True  ,        1
+random_noise , False        , False       , True       , False , False ,        1
+sale_month   , False        , False       , False      , False , True  ,        0

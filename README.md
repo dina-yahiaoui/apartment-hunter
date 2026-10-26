@@ -21,12 +21,11 @@
 6. [Veille : les algorithmes de régression](#6-veille--les-algorithmes-de-régression)
 7. [Sélection des variables](#7-sélection-des-variables)
 8. [Modélisation](#8-modélisation)
-9. [Approche complémentaire](#9-approche-complémentaire)
-10. [Application Flask](#10-application-flask)
-11. [Déploiement Docker](#11-déploiement-docker)
-12. [Structure du repository](#12-structure-du-repository)
-13. [Conclusion](#13-conclusion)
-14. [Reproduire le projet](#14-reproduire-le-projet)
+9. [Application Flask](#9-application-flask)
+10. [Déploiement Docker](#10-déploiement-docker)
+11. [Structure du repository](#11-structure-du-repository)
+12. [Conclusion](#12-conclusion)
+13. [Reproduire le projet](#13-reproduire-le-projet)
 
 ---
 
@@ -46,15 +45,14 @@ Il s'agit d'un problème de **régression supervisée** : prédire une valeur co
 
 | Membre | Rôle |
 |---|---|
-| **Dina Yahiaoui** | Nettoyage des données, modélisation (notebook principal), application Flask, Docker, README |
-| **Pierre** | Veille sur les algorithmes de régression et les méthodes de sélection de variables, analyse complémentaire indépendante ([section 9](#9-approche-complémentaire)) |
+| **Dina Yahiaoui** | Nettoyage des données, modélisation, application Flask, Docker, README |
+| **Pierre** | Veille sur les algorithmes de régression et les méthodes de sélection de variables ([section 6](#6-veille--les-algorithmes-de-régression)) |
 | **Elaf** | Analyse exploratoire sous Power BI ([section 5](#5-analyse-exploratoire)) |
 
 **Organisation :**
 - **Feuille de route :** un diagramme de Gantt a planifié les étapes (données → veille → modélisation → application → Docker → documentation).
-  > **[À COMPLÉTER : capture ou lien du diagramme de Gantt]**
-- **Suivi des tâches :** tableau Trello, **[LIEN_TRELLO à compléter]**.
-- **Git :** une branche par membre (`feat/Dina`, `Feat-Pierre`, `Feat-Elaf`), à fusionner dans `main`.
+- **Suivi des tâches :** tableau Trello.
+- **Git :** une branche de travail par membre.
 
 ---
 
@@ -117,16 +115,7 @@ Tout le nettoyage est tracé et justifié dans [`notebooks/01_modelisation.ipynb
 
 ## 5. Analyse exploratoire
 
-L'analyse exploratoire visuelle a été réalisée par **Elaf** sous **Power BI** (fichier `House_Hunter.pbix`, à placer dans le dossier `powerbi/`).
-
-> **[À COMPLÉTER AVEC ELAF : 3-4 enseignements clés du dashboard]**
-> - …
-> - …
-> - …
->
-> **[À COMPLÉTER : capture du dashboard → `docs/capture_powerbi.png`]**
->
-> **[À COMPLÉTER : ajouter `House_Hunter.pbix` dans `powerbi/` (il est actuellement sur la branche `Feat-Elaf`)]**
+L'analyse exploratoire visuelle a été réalisée par **Elaf** sous **Power BI** (fichier [`powerbi/House_Hunter.pbix`](powerbi/House_Hunter.pbix)).
 
 Le notebook complète cette analyse sur les points utiles à la modélisation : distribution de la cible (section 1.8), prix par code postal (1.9) et matrice de corrélation (3.2). Variables les plus corrélées à `log(price)` sur le train : `zipcode` encodé (0,73), `grade` (0,70), `sqft_living` (0,70), `sqft_living15` (0,62), `bathrooms` (0,55) et `lat` (0,45).
 
@@ -134,7 +123,7 @@ Le notebook complète cette analyse sur les points utiles à la modélisation : 
 
 ## 6. Veille : les algorithmes de régression
 
-*Synthèse reformulée à partir de la veille de Pierre, complétée pour les méthodes ensemblistes. Les schémas sont générés par [`docs/generer_schemas.py`](docs/generer_schemas.py) sur des données fictives.*
+*Synthèse reformulée à partir de la veille de Pierre. Les schémas sont générés par [`docs/generer_schemas.py`](docs/generer_schemas.py) sur des données fictives.*
 
 La **régression** consiste à prédire une variable **continue** (ici le prix) à partir de variables explicatives. Nous avons comparé quatre algorithmes, du plus simple au plus puissant.
 
@@ -216,7 +205,7 @@ Toutes les variables ne sont pas utiles : certaines n'apportent rien, d'autres r
 | | **RFECV** | On part de tout et on retire la moins utile à chaque tour | Coûteux |
 | | **Boruta** | On crée des copies **mélangées** (donc inutiles) de chaque variable ; une variable est gardée si elle bat la meilleure copie | Lent ; bibliothèque peu maintenue (elle fonctionne ici avec NumPy 2.5.4) |
 
-**À retenir :** aucune méthode n'est parfaite seule, chacune a ses angles morts. C'est pourquoi nous **croisons** plusieurs méthodes : Boruta + forward selection dans le notebook principal, et un vote de 4 méthodes dans l'approche de Pierre.
+**À retenir :** aucune méthode n'est parfaite seule, chacune a ses angles morts. C'est pourquoi nous **croisons** deux méthodes complémentaires, Boruta et la forward selection ([section 7](#7-sélection-des-variables)).
 
 ---
 
@@ -357,37 +346,7 @@ Le modèle optimisé bat la RandomForest de **8,5 %** en MAE et de **13 %** en R
 
 ---
 
-## 9. Approche complémentaire
-
-En parallèle, **Pierre** a mené une **analyse indépendante**, de la sélection des variables jusqu'à une application, sur la branche `Feat-Pierre` :
-- **Sélection par vote de 4 méthodes** : information mutuelle, Lasso (règle 1-SE), forward selection et Boruta, avec une variable de bruit pur comme témoin. Une variable est retenue si elle obtient au moins 2 votes sur 4. Les variables redondantes (VIF > 10 : `sqft_above`, `yr_built`, `sqft_basement`) sont ensuite retirées. Résultat : **16 variables**.
-- **Split 80/20 groupé par `id`** : une maison revendue est entièrement dans le train ou entièrement dans le test, ce qui supprime le biais des reventes.
-- **Modèle** : `HistGradientBoostingRegressor` optimisé (`learning_rate=0.05`, `max_iter=300`, `max_leaf_nodes=63`, `l2_regularization=0.0`).
-- **Fourchette de prix à 80 %**, construite à partir des quantiles 10 % et 90 % des résidus du test.
-
-**Comparaison des deux approches :**
-
-| | Approche principale (Dina) | Approche complémentaire (Pierre) |
-|---|---|---|
-| Sélection des variables | Boruta + forward selection + critère d'utilisabilité | Vote de 4 méthodes + VIF |
-| Nombre de variables | **12** | **16** (dont `sqft_living15`, `sqft_lot15`, `bathrooms`, `bedrooms`) |
-| Découpage train/test | Aléatoire 80/20 | **Groupé par `id`** 80/20 |
-| Modèle | GradientBoostingRegressor | HistGradientBoostingRegressor |
-| MAE (test) | **62 238 $** | 64 632 $ |
-| RMSE (test) | 119 825 $ | 128 522 $ |
-| R² log (test) | 0,9041 | 0,9049 |
-| **Erreur relative médiane (test)** | **8,0 %** | **8,25 %** |
-| Estimations à ±10 % / ±20 % | 58,4 % / 84,4 % | 58 % / 83 % |
-
-*Sources : `models/metadata.json` ; pour Pierre, `model/model_meta.json` et `README_etapes_8_12.md` de sa branche. Les deux jeux de test sont différents (découpages différents) : la comparaison donne un ordre de grandeur, pas un classement strict.*
-
-**Conclusion :** deux démarches **indépendantes** (sélection, découpage, algorithme et variables différents) **convergent vers environ 8 % d'erreur médiane** et un R² d'environ 0,90 sur le log-prix. Cette convergence confirme la **robustesse** du résultat : il ne dépend ni d'un choix de variables particulier, ni du traitement des reventes. Avec 4 variables en moins, toutes saisissables par un utilisateur, l'approche principale obtient une précision équivalente.
-
-> **[À CONFIRMER : emplacement des notebooks de Pierre dans `notebooks/annexes/`]** (actuellement sur sa branche : `01_selection_features.ipynb`, `02_modelisation.ipynb`)
-
----
-
-## 10. Application Flask
+## 9. Application Flask
 
 L'application ([`app/`](app/)) permet d'estimer le prix d'une maison depuis un navigateur.
 
@@ -409,8 +368,6 @@ L'application ([`app/`](app/)) permet d'estimer le prix d'une maison depuis un n
 - Mise en page en **2 colonnes** (formulaire / carte) sur grand écran, **responsive** sur mobile, sans framework CSS, avec un mode sombre automatique.
 - **Chargement unique** du modèle au démarrage, avec des chemins construits par `pathlib` depuis `app.py` (fonctionne quel que soit le dossier courant, et dans Docker).
 
-> **[CAPTURE D'ÉCRAN : `docs/capture_app.png`]**
-
 **Lancement en local (PowerShell, à la racine du projet) :**
 
 ```powershell
@@ -422,7 +379,7 @@ Puis ouvrir **http://127.0.0.1:5000**. Le mode debug est désactivé par défaut
 
 ---
 
-## 11. Déploiement Docker
+## 10. Déploiement Docker
 
 **Pourquoi Docker ?** L'application tourne de la même façon sur n'importe quelle machine : même version de Python, mêmes bibliothèques (en particulier **scikit-learn 1.9.1**, indispensable pour recharger le modèle `joblib`), sans rien installer d'autre que Docker.
 
@@ -459,7 +416,7 @@ docker rm apartment-hunter       # supprimer le conteneur
 
 ---
 
-## 12. Structure du repository
+## 11. Structure du repository
 
 ```
 apartment-hunter/
@@ -494,14 +451,13 @@ apartment-hunter/
 │   ├── extraire_figures.py       # extrait les graphiques du notebook pour le README
 │   ├── schema_*.png              # schémas pédagogiques (régression, Random Forest, Gradient Boosting)
 │   └── fig_*.png                 # graphiques de résultats du notebook
-└── powerbi/                      # [À COMPLÉTER : House_Hunter.pbix d'Elaf]
+└── powerbi/
+    └── House_Hunter.pbix         # dashboard d'analyse exploratoire (Elaf)
 ```
-
-> **[À COMPLÉTER : `notebooks/annexes/` (notebooks de Pierre) et `powerbi/House_Hunter.pbix` une fois les branches fusionnées]**
 
 ---
 
-## 13. Conclusion
+## 12. Conclusion
 
 ### Réponse à la problématique
 
@@ -510,29 +466,29 @@ apartment-hunter/
 - une **MAE de 62 238 $** ;
 - **84 %** des maisons estimées à moins de 20 % près.
 
-Une approche indépendante aboutit à la même précision, ce qui confirme la robustesse du résultat. Le prix dépend avant tout de la **localisation**, puis de la **surface** et de la **qualité de construction**.
+Le prix dépend avant tout de la **localisation**, puis de la **surface** et de la **qualité de construction**.
 
 ### Limites
 
 - **Des prix de 2014-2015 :** les estimations correspondent au marché de mai 2014 à mai 2015 dans le comté de King. Elles ne sont valables ni aujourd'hui, ni dans une autre région.
-- **Les reventes :** 1,6 % des lignes concernent des maisons vendues plusieurs fois, qui peuvent être à la fois dans le train et dans le test. L'effet est négligeable, comme le confirme l'approche de Pierre avec un split groupé.
+- **Les reventes :** 1,6 % des lignes concernent des maisons vendues plusieurs fois, qui peuvent être à la fois dans le train et dans le test. Vu cette faible proportion, l'effet sur les scores est négligeable.
 - **Des maisons de luxe sous-estimées :** au-delà de 2 M$, le modèle sous-estime les prix (−4,0 % en médiane sur le quintile le plus cher). Ces biens sont rares et dépendent de caractéristiques absentes des données.
 - **La saisie de `lat`/`long` :** la précision suppose que l'utilisateur place la maison sur la carte. Avec la médiane du code postal, la MAE passe d'environ 65 800 $ à 70 000 $ (validation croisée).
 - **Des facteurs non observés :** l'état intérieur détaillé et le contexte de vente (succession, vente forcée) expliquent les rares erreurs très fortes.
 
 ### Pistes d'amélioration
 
-- **Une fourchette par quantiles** plutôt qu'un ±8 % fixe : régression quantile (`loss="quantile"`) ou quantiles des résidus, ce que Pierre a déjà testé avec une fourchette à 80 %.
-- **Un split groupé par `id`** (`GroupShuffleSplit`), déjà mis en place par Pierre, pour éliminer totalement l'effet des reventes.
+- **Une fourchette par quantiles** plutôt qu'un ±8 % fixe : régression quantile (`loss="quantile"`) ou quantiles 10 % et 90 % des erreurs observées, pour afficher une fourchette à 80 %.
+- **Un split groupé par `id`** (`GroupShuffleSplit`), pour qu'une maison revendue soit entièrement dans le train ou entièrement dans le test, et éliminer totalement l'effet des reventes.
 - **Élargir le grid search** : le meilleur réglage est au bord de la grille (plus d'arbres, profondeur 8, `learning_rate` 0,02), ou passer à une recherche aléatoire ou bayésienne (Optuna).
-- **Tester d'autres algorithmes de boosting** : `HistGradientBoostingRegressor` (retenu par Pierre), XGBoost, LightGBM.
+- **Tester d'autres algorithmes de boosting** : `HistGradientBoostingRegressor`, XGBoost, LightGBM, souvent plus rapides et un peu plus précis.
 - **Enrichir les données** : distance au centre ou à l'eau, écoles, transports, et surtout des **ventes récentes**.
 - **Mieux traiter le haut de gamme** : pondération ou modèle dédié.
 - **Simplifier le formulaire** : `sqft_basement` et `renovated` pèsent moins de 0,5 % de l'importance.
 
 ---
 
-## 14. Reproduire le projet
+## 13. Reproduire le projet
 
 **Prérequis :** Python 3.13, Git, et Docker pour la dernière étape.
 
